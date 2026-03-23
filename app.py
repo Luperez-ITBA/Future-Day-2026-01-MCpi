@@ -1,6 +1,7 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
+from PIL import Image # Necesitamos esta librería para manejar la imagen
 
 # Configuración de página
 st.set_page_config(page_title="Cálculo de Pi - Monte Carlo", layout="wide")
@@ -9,8 +10,22 @@ st.set_page_config(page_title="Cálculo de Pi - Monte Carlo", layout="wide")
 st.title("✨ Calculando Pi con Puntos al Azar!")
 st.write("---")
 
-# Barra lateral con el dial
+# Barra lateral con el logo y el dial
 with st.sidebar:
+    # --- INSERCIÓN ELEGANTE DEL LOGO ---
+    try:
+        # Cargamos la imagen
+        logo = Image.open('logo_itba.png')
+        # La mostramos en la sidebar, centrada y con un ancho adecuado
+        st.image(logo, use_container_width=True)
+        # Un pequeño espacio separador
+        st.write("---")
+    except FileNotFoundError:
+        # Si por alguna razón no encuentra el archivo en local,
+        # mostramos un texto para que no de error la app.
+        st.warning("No se encontró el archivo 'logo_itba.png'. Asegúrate de que esté en la misma carpeta.")
+
+    # --- CONTROLES EXISTENTES ---
     st.header("Configuración")
     n_puntos = st.slider("Cantidad de puntos (N):", 
                          min_value=1000, 
