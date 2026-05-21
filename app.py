@@ -14,7 +14,7 @@ if 'n_total' not in st.session_state:
     st.session_state.y_plot = np.array([], dtype=float)
     st.session_state.inside_plot = np.array([], dtype=bool)
 
-# --- ESTILOS CSS UNIFICADOS ---
+# --- ESTILOS CSS UNIFICADOS Y RESPONSIVOS ---
 st.markdown("""
     <style>
     .main { background-color: #f8fafc; }
@@ -88,7 +88,7 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# --- CONTROLES DE ACUMULACIÓN (Ahora en 4 columnas) ---
+# --- CONTROLES DE ACUMULACIÓN (4 columnas) ---
 col_btn1, col_btn2, col_btn3, col_btn4 = st.columns(4)
 add_100 = col_btn1.button("➕ Agregar 100 puntos")
 add_1000 = col_btn2.button("➕ Agregar 1.000 puntos")
@@ -113,16 +113,13 @@ elif add_10000:
     puntos_a_generar = 10000
 
 if puntos_a_generar > 0:
-    # Generamos los nuevos puntos aleatorios
     new_x = np.random.uniform(-1, 1, puntos_a_generar)
     new_y = np.random.uniform(-1, 1, puntos_a_generar)
     new_inside = (new_x**2 + new_y**2) <= 1
     
-    # Impacto matemático real (ilimitado)
     st.session_state.n_total += puntos_a_generar
     st.session_state.n_inside += np.sum(new_inside)
     
-    # Impacto visual (tope inteligente de 25k puntos para conservar la fluidez visual)
     if len(st.session_state.x_plot) < 25000:
         espacio_libre = 25000 - len(st.session_state.x_plot)
         a_guardar = min(puntos_a_generar, espacio_libre)
@@ -132,18 +129,16 @@ if puntos_a_generar > 0:
 
 st.write("---")
 
-# --- DISPOSICIÓN BI-COLUMNA OPTIMIZADA (4 de texto, 3 de gráfico para achicarlo) ---
+# --- DISPOSICIÓN CENTRADA CON COLUMNAS DE COLCHÓN [1, 4.5, 4.5, 1] ---
 if st.session_state.n_total > 0:
-    col_izq, col_der = st.columns([4, 3], gap="large")
+    col_pad1, col_izq, col_der, col_pad2 = st.columns([1, 4.5, 4.5, 1], gap="large")
     
     with col_izq:
         st.write("### 📊 Estado de la aproximación")
         
-        # Cálculos métricos
         pi_estimado = 4 * (st.session_state.n_inside / st.session_state.n_total)
         error_abs = abs(pi_estimado - np.pi)
         
-        # Tarjetas de datos limpias
         st.metric("Total de Dardos Lanzados", f"{st.session_state.n_total:,}")
         st.metric("Dardos dentro del blanco", f"{st.session_state.n_inside:,}")
         st.metric("Valor Estimado de π", f"{pi_estimado:.6f}")
@@ -156,7 +151,7 @@ if st.session_state.n_total > 0:
         """)
 
     with col_der:
-        # Gráfico cuadrado perfecto, limpio, responsivo y ahora contenido en una columna más chica
+        # Gráfico simétrico y perfectamente centrado en su columna
         fig, ax = plt.subplots(figsize=(5, 5))
         
         x_v = st.session_state.x_plot
@@ -164,21 +159,17 @@ if st.session_state.n_total > 0:
         d_v = st.session_state.inside_plot.astype(bool) 
         
         if len(x_v) > 0:
-            # Puntos dentro (Verde) y fuera (Rojo)
             ax.scatter(x_v[d_v], y_v[d_v], color='#2ecc71', s=1.5, alpha=0.6, label='Dentro')
             ax.scatter(x_v[~d_v], y_v[~d_v], color='#e74c3c', s=1.5, alpha=0.6, label='Fuera')
         
-        # Dibujar silueta del círculo central de radio 1
         circle = plt.Circle((0, 0), 1, color='#001f3f', fill=False, linewidth=2.5, label='Blanco')
         ax.add_artist(circle)
         
-        # Formateo estético del gráfico
         ax.set_xlim(-1.05, 1.05)
         ax.set_ylim(-1.05, 1.05)
         ax.set_aspect('equal')
         ax.axis('off') 
         
-        # use_container_width=True hace que responda al zoom dinámicamente dentro de su nueva columna
         st.pyplot(fig, use_container_width=True)
 else:
     st.info("🎯 Hacé clic en los botones de arriba para empezar a lanzar dardos y ver la magia de Monte Carlo en tiempo real.")
