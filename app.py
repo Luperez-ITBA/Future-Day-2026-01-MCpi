@@ -132,7 +132,7 @@ with col_titulo:
 st.write("---")
 
 # Carga de imágenes en Base64
-img_stokhos = get_base64_image('stokhos.jpg')
+img_stokhos = get_base64_image('stokhos.png')
 img_jvn = get_base64_image('jvn.png')
 
 # --- RECUADRO DE CONTEXTO HISTÓRICO ---
