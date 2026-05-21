@@ -27,35 +27,39 @@ st.markdown("""
     <style>
     .main { background-color: #f8fafc; }
     
-    /* Recuadro de contexto histórico adaptado */
+    /* Recuadro de contexto histórico estructurado en filas */
     .context-box {
         background-color: #e2e8f0;
         border-radius: 15px;
         border-left: 10px solid #0074D9;
         padding: 30px;
         display: flex;
-        align-items: center;
-        gap: 35px;
+        flex-direction: column;
+        gap: 35px; /* Espacio generoso entre las dos historias */
         margin-bottom: 25px;
     }
     
-    /* Contenedor de imágenes de la izquierda (Alineación vertical en PC) */
-    .image-side {
+    /* Cada fila que une una imagen con su texto específico */
+    .intro-row {
+        display: flex;
+        align-items: center;
+        gap: 35px;
+    }
+    
+    /* Contenedor individual para cada imagen */
+    .image-side-single {
         min-width: 150px;
         max-width: 150px;
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
         text-align: center;
     }
-    .image-side img {
+    .image-side-single img {
         width: 100%;
         height: auto;
         border-radius: 10px;
         box-shadow: 0 4px 8px rgba(0,0,0,0.15);
     }
     
-    /* Sección de texto a la derecha */
+    /* Sección de texto */
     .text-side {
         flex: 1;
     }
@@ -95,22 +99,21 @@ st.markdown("""
         h1 { font-size: 26px !important; }
         
         .context-box {
-            flex-direction: column !important;
             padding: 20px !important;
-            gap: 20px !important;
+            gap: 30px !important;
+        }
+        
+        /* En el celular cada fila se apila verticalmente e individuales */
+        .intro-row {
+            flex-direction: column !important;
+            gap: 12px !important;
             text-align: center !important;
         }
         
-        /* En el celular las imágenes se ponen una al lado de la otra en horizontal */
-        .image-side {
-            flex-direction: row !important;
-            min-width: 100% !important;
-            max-width: 100% !important;
-            justify-content: center !important;
-            gap: 15px !important;
-        }
-        .image-side img {
-            width: 110px !important;
+        .image-side-single {
+            min-width: 120px !important;
+            max-width: 120px !important;
+            margin: 0 auto !important;
         }
         
         .text-side p {
@@ -132,27 +135,36 @@ with col_titulo:
 st.write("---")
 
 # Carga de imágenes en Base64
-img_stokhos = get_base64_image('stokhos.png')
+img_stokhos = get_base64_image('stokhos.jpg')
 img_jvn = get_base64_image('jvn.png')
 
-# --- RECUADRO DE CONTEXTO HISTÓRICO ---
+# --- RECUADRO DE CONTEXTO HISTÓRICO OPTIMIZADO ---
 st.markdown(f"""
     <div class="context-box">
-        <div class="image-side">
-            <img src="{img_stokhos}" alt="Stokhos - Arquero Griego">
-            <img src="{img_jvn}" alt="John von Neumann">
+        <div class="intro-row">
+            <div class="image-side-single">
+                <img src="{img_stokhos}" alt="Stokhos - Arquero Griego">
+            </div>
+            <div class="text-side">
+                <p>
+                    Los arqueros de la Antigua Grecia practicaban tirando a un blanco que llamaban <b><i>stokhos</i></b> (στόχος). 
+                    Pese a su proverbial puntería, se daban cuenta que había pequeños factores <b><i>al azar</i></b> que los 
+                    hacían fallar ligeramente al blanco, y de allí proviene el término "estocástico" que usamos en la matemática actual.
+                </p>
+            </div>
         </div>
-        <div class="text-side">
-            <p>
-                Los arqueros de la Antigua Grecia practicaban tirando a un blanco que llamaban <b><i>stokhos</i></b> (στόχος). 
-                Pese a su proverbial puntería, se daban cuenta que había pequeños factores <b><i>al azar</i></b> que los 
-                hacían fallar ligeramente al blanco, y de allí proviene el término "estocástico" que usamos en la matemática actual.
-            </p>
-            <p style="margin-top: 15px;">
-                En el siglo XX, el matemático John von Neumann, inventor de las computadoras modernas, inspirado por el 
-                Casino de Monte Carlo, notó que podía usar las simulaciones de <b><i>procesos estocásticos</i></b> para 
-                realizar aproximaciones numéricas de ciertas cantidades.
-            </p>
+        
+        <div class="intro-row">
+            <div class="image-side-single">
+                <img src="{img_jvn}" alt="John von Neumann">
+            </div>
+            <div class="text-side">
+                <p>
+                    En el siglo XX, el matemático John von Neumann, inventor de las computadoras modernas, inspirado por el 
+                    Casino de Monte Carlo, notó que podía usar las simulaciones de <b><i>procesos estocásticos</i></b> para 
+                    realizar aproximaciones numéricas de ciertas cantidades.
+                </p>
+            </div>
         </div>
     </div>
 """, unsafe_allow_html=True)
