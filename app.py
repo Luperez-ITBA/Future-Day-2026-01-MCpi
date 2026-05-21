@@ -22,12 +22,13 @@ def get_base64_image(image_base_name):
 if 'n_total' not in st.session_state:
     st.session_state.n_total = 0
     st.session_state.n_inside = 0
-    st.session_state.x_plot = np.array([], dtype=float)
-    st.session_state.y_plot = np.array([], dtype=float)
-    st.session_state.inside_plot = np.array([], dtype=bool)
+    # SOLUCIÓN AL BUG: Usamos listas nativas de Python en lugar de np.array
+    # Esto evita que numpy rompa los tipos de datos al hacer "append"
+    st.session_state.x_plot = []
+    st.session_state.y_plot = []
+    st.session_state.inside_plot = []
 
 # --- ESTILOS CSS UNIFICADOS Y RESPONSIVOS ---
-# ACÁ ESTÁ LA CORRECCIÓN 1: Todo el CSS sin espacios al principio
 st.markdown("""
 <style>
 .main { background-color: #f8fafc; }
@@ -145,7 +146,6 @@ img_stokhos = get_base64_image('stokhos')
 img_jvn = get_base64_image('jvn')
 
 # --- RECUADRO DE CONTEXTO HISTÓRICO OPTIMIZADO ---
-# ACÁ ESTÁ LA CORRECCIÓN 2: Todo el HTML pegado a la izquierda (sin indentación)
 st.markdown(f"""
 <div class="context-box">
     <div class="intro-row">
@@ -187,9 +187,10 @@ reiniciar = col_btn4.button("🗑️ Reiniciar Simulación")
 if reiniciar:
     st.session_state.n_total = 0
     st.session_state.n_inside = 0
-    st.session_state.x_plot = np.array([], dtype=float)
-    st.session_state.y_plot = np.array([], dtype=float)
-    st.session_state.inside_plot = np.array([], dtype=bool)
+    # Reiniciamos como listas
+    st.session_state.x_plot = []
+    st.session_state.y_plot = []
+    st.session_state.inside_plot = []
     st.rerun()
 
 puntos_a_generar = 0
@@ -211,9 +212,11 @@ if puntos_a_generar > 0:
     if len(st.session_state.x_plot) < 25000:
         espacio_libre = 25000 - len(st.session_state.x_plot)
         a_guardar = min(puntos_a_generar, espacio_libre)
-        st.session_state.x_plot = np.append(st.session_state.x_plot, new_x[:a_guardar])
-        st.session_state.y_plot = np.append(st.session_state.y_plot, new_y[:a_guardar])
-        st.session_state.inside_plot = np.append(st.session_state.inside_plot, new_inside[:a_guardar])
+        
+        # Extendemos las listas, asegurando que no haya conflictos de Numpy
+        st.session_state.x_plot.extend(new_x[:a_guardar].tolist())
+        st.session_state.y_plot.extend(new_y[:a_guardar].tolist())
+        st.session_state.inside_plot.extend(new_inside[:a_guardar].tolist())
 
 st.write("---")
 
@@ -241,9 +244,10 @@ Multiplicando la proporción por 4, obtenemos la estimación actual de $\\pi$. �
     with col_der:
         fig, ax = plt.subplots(figsize=(5, 5))
         
-        x_v = st.session_state.x_plot
-        y_v = st.session_state.y_plot
-        d_v = st.session_state.inside_plot.astype(bool) 
+        # Convertimos las listas a arrays JUSTO antes de graficar y forzando el tipo (dtype)
+        x_v = np.array(st.session_state.x_plot, dtype=float)
+        y_v = np.array(st.session_state.y_plot, dtype=float)
+        d_v = np.array(st.session_state.inside_plot, dtype=bool) 
         
         if len(x_v) > 0:
             ax.scatter(x_v[d_v], y_v[d_v], color='#2ecc71', s=1.5, alpha=0.6, label='Dentro')
