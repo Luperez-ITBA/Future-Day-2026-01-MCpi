@@ -7,12 +7,16 @@ import os
 # Configuración de la página
 st.set_page_config(page_title="Cálculo de Pi - Monte Carlo", layout="wide", initial_sidebar_state="collapsed")
 
-# Función para cargar imágenes locales en el HTML (Base64)
-def get_base64_image(image_path):
-    if os.path.exists(image_path):
-        with open(image_path, "rb") as img_file:
-            return f"data:image/png;base64,{base64.b64encode(img_file.read()).decode()}"
-    return "https://via.placeholder.com/150?text=Imagen"
+# Función a prueba de balas para cargar imágenes (busca la extensión automáticamente)
+def get_base64_image(image_base_name):
+    extensiones = ['.png', '.jpg', '.jpeg', '.PNG', '.JPG']
+    for ext in extensiones:
+        path = image_base_name + ext
+        if os.path.exists(path):
+            mime = "image/jpeg" if ext.lower() in ['.jpg', '.jpeg'] else "image/png"
+            with open(path, "rb") as img_file:
+                return f"data:{mime};base64,{base64.b64encode(img_file.read()).decode()}"
+    return "https://via.placeholder.com/150?text=Falta+" + image_base_name
 
 # --- MEMORIA ACUMULATIVA (Session State) ---
 if 'n_total' not in st.session_state:
@@ -126,17 +130,19 @@ st.markdown("""
 # --- CABECERA ---
 col_logo, col_titulo = st.columns([1, 4])
 with col_logo:
-    if os.path.exists('logo_itba.png'):
-        st.image('logo_itba.png', width=150)
+    # También blindamos el logo por las dudas
+    img_logo = get_base64_image('logo_itba')
+    if "Falta" not in img_logo:
+        st.markdown(f'<img src="{img_logo}" width="150">', unsafe_allow_html=True)
     else:
         st.write("### ITBA")
 with col_titulo:
     st.title("🎯 Calculando Pi con Dardos (Monte Carlo)")
 st.write("---")
 
-# Carga de imágenes en Base64 (Corrección de formato a .png)
-img_stokhos = get_base64_image('stokhos.png')
-img_jvn = get_base64_image('jvn.png')
+# Carga de imágenes pasándole SOLO el nombre (la función busca la extensión)
+img_stokhos = get_base64_image('stokhos')
+img_jvn = get_base64_image('jvn')
 
 # --- RECUADRO DE CONTEXTO HISTÓRICO OPTIMIZADO ---
 st.markdown(f"""
