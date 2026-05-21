@@ -1,10 +1,18 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
+import base64
 import os
 
 # Configuración de la página
 st.set_page_config(page_title="Cálculo de Pi - Monte Carlo", layout="wide", initial_sidebar_state="collapsed")
+
+# Función para cargar imágenes locales en el HTML (Base64)
+def get_base64_image(image_path):
+    if os.path.exists(image_path):
+        with open(image_path, "rb") as img_file:
+            return f"data:image/png;base64,{base64.b64encode(img_file.read()).decode()}"
+    return "https://via.placeholder.com/150?text=Imagen"
 
 # --- MEMORIA ACUMULATIVA (Session State) ---
 if 'n_total' not in st.session_state:
@@ -19,17 +27,41 @@ st.markdown("""
     <style>
     .main { background-color: #f8fafc; }
     
-    /* Recuadro de contexto */
+    /* Recuadro de contexto histórico adaptado */
     .context-box {
         background-color: #e2e8f0;
         border-radius: 15px;
         border-left: 10px solid #0074D9;
-        padding: 20px;
-        margin-bottom: 20px;
+        padding: 30px;
+        display: flex;
+        align-items: center;
+        gap: 35px;
+        margin-bottom: 25px;
     }
-    .context-box p {
-        font-size: 18px !important;
-        line-height: 1.5;
+    
+    /* Contenedor de imágenes de la izquierda (Alineación vertical en PC) */
+    .image-side {
+        min-width: 150px;
+        max-width: 150px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    .image-side img {
+        width: 100%;
+        height: auto;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    /* Sección de texto a la derecha */
+    .text-side {
+        flex: 1;
+    }
+    .text-side p {
+        font-size: 19px !important;
+        line-height: 1.6;
         color: #1e293b;
         margin: 0;
     }
@@ -58,10 +90,32 @@ st.markdown("""
         background-color: #0074D9;
     }
 
-    /* Ajustes responsivos para celulares */
+    /* --- PARCHE RESPONSIVO INTELIGENTE PARA CELULARES --- */
     @media (max-width: 768px) {
         h1 { font-size: 26px !important; }
-        .context-box p { font-size: 15px !important; }
+        
+        .context-box {
+            flex-direction: column !important;
+            padding: 20px !important;
+            gap: 20px !important;
+            text-align: center !important;
+        }
+        
+        /* En el celular las imágenes se ponen una al lado de la otra en horizontal */
+        .image-side {
+            flex-direction: row !important;
+            min-width: 100% !important;
+            max-width: 100% !important;
+            justify-content: center !important;
+            gap: 15px !important;
+        }
+        .image-side img {
+            width: 110px !important;
+        }
+        
+        .text-side p {
+            font-size: 16px !important;
+        }
     }
     </style>
 """, unsafe_allow_html=True)
@@ -77,18 +131,33 @@ with col_titulo:
     st.title("🎯 Calculando Pi con Dardos (Monte Carlo)")
 st.write("---")
 
-# --- EXPLICACIÓN DE ENTRADA ---
-st.markdown("""
+# Carga de imágenes en Base64
+img_stokhos = get_base64_image('stokhos.jpg')
+img_jvn = get_base64_image('jvn.png')
+
+# --- RECUADRO DE CONTEXTO HISTÓRICO ---
+st.markdown(f"""
     <div class="context-box">
-        <p>
-            Imaginá que lanzamos dardos completamente al azar dentro de un cuadrado. Si inscribimos un círculo perfecto 
-            adentro, la proporción de dardos que caen dentro del círculo versus el total nos permite aproximar el 
-            número matemático <b>π</b>. ¡Probá sumando puntos acumulados para ver la convergencia en acción!
-        </p>
+        <div class="image-side">
+            <img src="{img_stokhos}" alt="Stokhos - Arquero Griego">
+            <img src="{img_jvn}" alt="John von Neumann">
+        </div>
+        <div class="text-side">
+            <p>
+                Los arqueros de la Antigua Grecia practicaban tirando a un blanco que llamaban <b><i>stokhos</i></b> (στόχος). 
+                Pese a su proverbial puntería, se daban cuenta que había pequeños factores <b><i>al azar</i></b> que los 
+                hacían fallar ligeramente al blanco, y de allí proviene el término "estocástico" que usamos en la matemática actual.
+            </p>
+            <p style="margin-top: 15px;">
+                En el siglo XX, el matemático John von Neumann, inventor de las computadoras modernas, inspirado por el 
+                Casino de Monte Carlo, notó que podía usar las simulaciones de <b><i>procesos estocásticos</i></b> para 
+                realizar aproximaciones numéricas de ciertas cantidades.
+            </p>
+        </div>
     </div>
 """, unsafe_allow_html=True)
 
-# --- CONTROLES DE ACUMULACIÓN (4 columnas) ---
+# --- CONTROLES DE ACUMULACIÓN ---
 col_btn1, col_btn2, col_btn3, col_btn4 = st.columns(4)
 add_100 = col_btn1.button("➕ Agregar 100 puntos")
 add_1000 = col_btn2.button("➕ Agregar 1.000 puntos")
@@ -129,7 +198,7 @@ if puntos_a_generar > 0:
 
 st.write("---")
 
-# --- DISPOSICIÓN CENTRADA CON COLUMNAS DE COLCHÓN [1, 4.5, 4.5, 1] ---
+# --- DISPOSICIÓN CENTRADA SIMÉTRICA ---
 if st.session_state.n_total > 0:
     col_pad1, col_izq, col_der, col_pad2 = st.columns([1, 4.5, 4.5, 1], gap="large")
     
@@ -151,7 +220,6 @@ if st.session_state.n_total > 0:
         """)
 
     with col_der:
-        # Gráfico simétrico y perfectamente centrado en su columna
         fig, ax = plt.subplots(figsize=(5, 5))
         
         x_v = st.session_state.x_plot
