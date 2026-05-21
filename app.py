@@ -27,110 +27,110 @@ if 'n_total' not in st.session_state:
     st.session_state.inside_plot = np.array([], dtype=bool)
 
 # --- ESTILOS CSS UNIFICADOS Y RESPONSIVOS ---
+# ACÁ ESTÁ LA CORRECCIÓN 1: Todo el CSS sin espacios al principio
 st.markdown("""
-    <style>
-    .main { background-color: #f8fafc; }
+<style>
+.main { background-color: #f8fafc; }
+
+/* Recuadro de contexto histórico estructurado en filas */
+.context-box {
+    background-color: #e2e8f0;
+    border-radius: 15px;
+    border-left: 10px solid #0074D9;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 35px; /* Espacio generoso entre las dos historias */
+    margin-bottom: 25px;
+}
+
+/* Cada fila que une una imagen con su texto específico */
+.intro-row {
+    display: flex;
+    align-items: center;
+    gap: 35px;
+}
+
+/* Contenedor individual para cada imagen */
+.image-side-single {
+    min-width: 150px;
+    max-width: 150px;
+    text-align: center;
+}
+.image-side-single img {
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+/* Sección de texto */
+.text-side {
+    flex: 1;
+}
+.text-side p {
+    font-size: 19px !important;
+    line-height: 1.6;
+    color: #1e293b;
+    margin: 0;
+}
+
+/* Botón de navegación personalizado */
+.btn-nav {
+    display: block;
+    width: 100%;
+    padding: 12px 0;
+    background-color: #001f3f;
+    color: #ffffff !important;
+    text-align: center;
+    border-radius: 10px;
+    text-decoration: none !important;
+    font-weight: 600;
+    font-size: 16px;
+    transition: background-color 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-top: 30px;
+}
+.btn-nav:hover, .btn-nav:visited, .btn-nav:active {
+    text-decoration: none !important;
+    color: white !important;
+}
+.btn-nav:hover {
+    background-color: #0074D9;
+}
+
+/* --- PARCHE RESPONSIVO INTELIGENTE PARA CELULARES --- */
+@media (max-width: 768px) {
+    h1 { font-size: 26px !important; }
     
-    /* Recuadro de contexto histórico estructurado en filas */
     .context-box {
-        background-color: #e2e8f0;
-        border-radius: 15px;
-        border-left: 10px solid #0074D9;
-        padding: 30px;
-        display: flex;
-        flex-direction: column;
-        gap: 35px; /* Espacio generoso entre las dos historias */
-        margin-bottom: 25px;
+        padding: 20px !important;
+        gap: 30px !important;
     }
     
-    /* Cada fila que une una imagen con su texto específico */
+    /* En el celular cada fila se apila verticalmente e individuales */
     .intro-row {
-        display: flex;
-        align-items: center;
-        gap: 35px;
+        flex-direction: column !important;
+        gap: 12px !important;
+        text-align: center !important;
     }
     
-    /* Contenedor individual para cada imagen */
     .image-side-single {
-        min-width: 150px;
-        max-width: 150px;
-        text-align: center;
-    }
-    .image-side-single img {
-        width: 100%;
-        height: auto;
-        border-radius: 10px;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        min-width: 120px !important;
+        max-width: 120px !important;
+        margin: 0 auto !important;
     }
     
-    /* Sección de texto */
-    .text-side {
-        flex: 1;
-    }
     .text-side p {
-        font-size: 19px !important;
-        line-height: 1.6;
-        color: #1e293b;
-        margin: 0;
+        font-size: 16px !important;
     }
-
-    /* Botón de navegación personalizado */
-    .btn-nav {
-        display: block;
-        width: 100%;
-        padding: 12px 0;
-        background-color: #001f3f;
-        color: #ffffff !important;
-        text-align: center;
-        border-radius: 10px;
-        text-decoration: none !important;
-        font-weight: 600;
-        font-size: 16px;
-        transition: background-color 0.3s ease;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        margin-top: 30px;
-    }
-    .btn-nav:hover, .btn-nav:visited, .btn-nav:active {
-        text-decoration: none !important;
-        color: white !important;
-    }
-    .btn-nav:hover {
-        background-color: #0074D9;
-    }
-
-    /* --- PARCHE RESPONSIVO INTELIGENTE PARA CELULARES --- */
-    @media (max-width: 768px) {
-        h1 { font-size: 26px !important; }
-        
-        .context-box {
-            padding: 20px !important;
-            gap: 30px !important;
-        }
-        
-        /* En el celular cada fila se apila verticalmente e individuales */
-        .intro-row {
-            flex-direction: column !important;
-            gap: 12px !important;
-            text-align: center !important;
-        }
-        
-        .image-side-single {
-            min-width: 120px !important;
-            max-width: 120px !important;
-            margin: 0 auto !important;
-        }
-        
-        .text-side p {
-            font-size: 16px !important;
-        }
-    }
-    </style>
+}
+</style>
 """, unsafe_allow_html=True)
 
 # --- CABECERA ---
 col_logo, col_titulo = st.columns([1, 4])
 with col_logo:
-    # También blindamos el logo por las dudas
     img_logo = get_base64_image('logo_itba')
     if "Falta" not in img_logo:
         st.markdown(f'<img src="{img_logo}" width="150">', unsafe_allow_html=True)
@@ -140,39 +140,40 @@ with col_titulo:
     st.title("🎯 Calculando Pi con Dardos (Monte Carlo)")
 st.write("---")
 
-# Carga de imágenes pasándole SOLO el nombre (la función busca la extensión)
+# Carga de imágenes
 img_stokhos = get_base64_image('stokhos')
 img_jvn = get_base64_image('jvn')
 
 # --- RECUADRO DE CONTEXTO HISTÓRICO OPTIMIZADO ---
+# ACÁ ESTÁ LA CORRECCIÓN 2: Todo el HTML pegado a la izquierda (sin indentación)
 st.markdown(f"""
-    <div class="context-box">
-        <div class="intro-row">
-            <div class="image-side-single">
-                <img src="{img_stokhos}" alt="Stokhos - Arquero Griego">
-            </div>
-            <div class="text-side">
-                <p>
-                    Los arqueros de la Antigua Grecia practicaban tirando a un blanco que llamaban <b><i>stokhos</i></b> (στόχος). 
-                    Pese a su proverbial puntería, se daban cuenta que había pequeños factores <b><i>al azar</i></b> que los 
-                    hacían fallar ligeramente al blanco, y de allí proviene el término "estocástico" que usamos en la matemática actual.
-                </p>
-            </div>
+<div class="context-box">
+    <div class="intro-row">
+        <div class="image-side-single">
+            <img src="{img_stokhos}" alt="Stokhos - Arquero Griego">
         </div>
-        
-        <div class="intro-row">
-            <div class="image-side-single">
-                <img src="{img_jvn}" alt="John von Neumann">
-            </div>
-            <div class="text-side">
-                <p>
-                    En el siglo XX, el matemático John von Neumann, inventor de las computadoras modernas, inspirado por el 
-                    Casino de Monte Carlo, notó que podía usar las simulaciones de <b><i>procesos estocásticos</i></b> para 
-                    realizar aproximaciones numéricas de ciertas cantidades.
-                </p>
-            </div>
+        <div class="text-side">
+            <p>
+                Los arqueros de la Antigua Grecia practicaban tirando a un blanco que llamaban <b><i>stokhos</i></b> (στόχος). 
+                Pese a su proverbial puntería, se daban cuenta que había pequeños factores <b><i>al azar</i></b> que los 
+                hacían fallar ligeramente al blanco, y de allí proviene el término "estocástico" que usamos en la matemática actual.
+            </p>
         </div>
     </div>
+    
+    <div class="intro-row">
+        <div class="image-side-single">
+            <img src="{img_jvn}" alt="John von Neumann">
+        </div>
+        <div class="text-side">
+            <p>
+                En el siglo XX, el matemático John von Neumann, inventor de las computadoras modernas, inspirado por el 
+                Casino de Monte Carlo, notó que podía usar las simulaciones de <b><i>procesos estocásticos</i></b> para 
+                realizar aproximaciones numéricas de ciertas cantidades.
+            </p>
+        </div>
+    </div>
+</div>
 """, unsafe_allow_html=True)
 
 # --- CONTROLES DE ACUMULACIÓN ---
@@ -232,9 +233,9 @@ if st.session_state.n_total > 0:
         st.metric("Error Absoluto", f"{error_abs:.6f}")
         
         st.markdown(f"""
-        $$\\frac{{N_{{dentro}}}}{{N_{{total}}}} \\approx \\frac{{\\text{{Área Círculo}}}}{{\\text{{Área Cuadrado}}}} = \\frac{{\\pi}}{{4}}$$
-        
-        Multiplicando la proporción por 4, obtenemos la estimación actual de $\\pi$. ¡Cuantos más puntos sumes, más estable se volverá el decimal!
+$$\\frac{{N_{{dentro}}}}{{N_{{total}}}} \\approx \\frac{{\\text{{Área Círculo}}}}{{\\text{{Área Cuadrado}}}} = \\frac{{\\pi}}{{4}}$$
+
+Multiplicando la proporción por 4, obtenemos la estimación actual de $\\pi$. ¡Cuantos más puntos sumes, más estable se volverá el decimal!
         """)
 
     with col_der:
