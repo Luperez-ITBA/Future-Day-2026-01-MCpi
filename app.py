@@ -1,98 +1,187 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
-from PIL import Image # Necesitamos esta librería para manejar la imagen
+import os
 
-# Configuración de página
-st.set_page_config(page_title="Cálculo de Pi - Monte Carlo", layout="wide")
+# Configuración de la página
+st.set_page_config(page_title="Cálculo de Pi - Monte Carlo", layout="wide", initial_sidebar_state="collapsed")
 
-# Título solicitado
-st.title("✨ Calculando Pi con Puntos al Azar!")
+# --- MEMORIA ACUMULATIVA (Session State) ---
+if 'n_total' not in st.session_state:
+    st.session_state.n_total = 0
+    st.session_state.n_inside = 0
+    st.session_state.x_plot = np.array([])
+    st.session_state.y_plot = np.array([])
+    st.session_state.inside_plot = np.array([])
+
+# --- ESTILOS CSS UNIFICADOS ---
+st.markdown("""
+    <style>
+    .main { background-color: #f8fafc; }
+    
+    /* Recuadro de contexto */
+    .context-box {
+        background-color: #e2e8f0;
+        border-radius: 15px;
+        border-left: 10px solid #0074D9;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .context-box p {
+        font-size: 18px !important;
+        line-height: 1.5;
+        color: #1e293b;
+        margin: 0;
+    }
+
+    /* Botón de retorno al Hub */
+    .btn-nav {
+        display: block;
+        width: 100%;
+        padding: 12px 0;
+        background-color: #001f3f;
+        color: #ffffff !important;
+        text-align: center;
+        border-radius: 10px;
+        text-decoration: none !important;
+        font-weight: 600;
+        font-size: 16px;
+        transition: background-color 0.3s ease;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-top: 30px;
+    }
+    .btn-nav:hover, .btn-nav:visited, .btn-nav:active {
+        text-decoration: none !important;
+        color: white !important;
+    }
+    .btn-nav:hover {
+        background-color: #0074D9;
+    }
+
+    /* Ajustes responsivos para celulares */
+    @media (max-width: 768px) {
+        h1 { font-size: 26px !important; }
+        .context-box p { font-size: 15px !important; }
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# --- CABECERA ---
+col_logo, col_titulo = st.columns([1, 4])
+with col_logo:
+    if os.path.exists('logo_itba.png'):
+        st.image('logo_itba.png', width=150)
+    else:
+        st.write("### ITBA")
+with col_titulo:
+    st.title("🎯 Calculando Pi con Dardos (Monte Carlo)")
 st.write("---")
 
-# Barra lateral con el logo y el dial
-with st.sidebar:
-    # --- INSERCIÓN ELEGANTE DEL LOGO ---
-    try:
-        # Cargamos la imagen
-        logo = Image.open('logo_itba.png')
-        # La mostramos en la sidebar, centrada y con un ancho adecuado
-        st.image(logo, use_container_width=True)
-        # Un pequeño espacio separador
-        st.write("---")
-    except FileNotFoundError:
-        # Si por alguna razón no encuentra el archivo en local,
-        # mostramos un texto para que no de error la app.
-        st.warning("No se encontró el archivo 'logo_itba.png'. Asegúrate de que esté en la misma carpeta.")
+# --- EXPLICACIÓN DE ENTRADA ---
+st.markdown("""
+    <div class="context-box">
+        <p>
+            Imaginá que lanzamos dardos completamente al azar dentro de un cuadrado. Si inscribimos un círculo perfecto 
+            adentro, la proporción de dardos que caen dentro del círculo versus el total nos permite aproximar el 
+            número matemático <b>π</b>. ¡Probá sumando puntos acumulados para ver la convergencia en acción!
+        </p>
+    </div>
+""", unsafe_allow_html=True)
 
-    # --- CONTROLES EXISTENTES ---
-    st.header("Configuración")
-    n_puntos = st.slider("Cantidad de puntos (N):", 
-                         min_value=1000, 
-                         max_value=1000000, 
-                         value=500000, 
-                         step=50000)
-    st.info("Para optimizar el rendimiento, se visualiza una muestra representativa de los puntos.")
+# --- CONTROLES DE ACUMULACIÓN ---
+col_btn1, col_btn2, col_btn3 = st.columns(3)
+add_100 = col_btn1.button("➕ Agregar 100 puntos")
+add_1000 = col_btn2.button("➕ Agregar 1.000 puntos")
+reiniciar = col_btn3.button("🗑️ Reiniciar Simulación")
 
-# --- LÓGICA MATEMÁTICA ---
-x = np.random.uniform(-1, 1, n_puntos)
-y = np.random.uniform(-1, 1, n_puntos)
+# Lógica de acumulación
+if reiniciar:
+    st.session_state.n_total = 0
+    st.session_state.n_inside = 0
+    st.session_state.x_plot = np.array([])
+    st.session_state.y_plot = np.array([])
+    st.session_state.inside_plot = np.array([])
+    st.rerun()
 
-distancia = x**2 + y**2
-dentro = distancia <= 1
-puntos_dentro = np.sum(dentro)
+puntos_a_generar = 0
+if add_100:
+    puntos_a_generar = 100
+elif add_1000:
+    puntos_a_generar = 1000
 
-pi_estimado = 4 * (puntos_dentro / n_puntos)
-error = abs(np.pi - pi_estimado)
+if puntos_a_generar > 0:
+    # Generamos los nuevos puntos aleatorios
+    new_x = np.random.uniform(-1, 1, puntos_a_generar)
+    new_y = np.random.uniform(-1, 1, puntos_a_generar)
+    new_inside = (new_x**2 + new_y**2) <= 1
+    
+    # Impacto matemático real (ilimitado)
+    st.session_state.n_total += puntos_a_generar
+    st.session_state.n_inside += np.sum(new_inside)
+    
+    # Impacto visual (tope de 25k puntos en el gráfico para conservar performance móvil/PC)
+    if len(st.session_state.x_plot) < 25000:
+        espacio_libre = 25000 - len(st.session_state.x_plot)
+        a_guardar = min(puntos_a_generar, espacio_libre)
+        st.session_state.x_plot = np.append(st.session_state.x_plot, new_x[:a_guardar])
+        st.session_state.y_plot = np.append(st.session_state.y_plot, new_y[:a_guardar])
+        st.session_state.inside_plot = np.append(st.session_state.inside_plot, new_inside[:a_guardar])
 
-# --- INTERFAZ ---
-col1, col2 = st.columns([1, 2])
+st.write("---")
 
-with col1:
-    st.subheader("Explicación: Método de Monte Carlo")
-    st.markdown(r"""
-    Utilizamos la relación entre el área de un círculo inscrito en un cuadrado:
+# --- DISPOSICIÓN BI-COLUMNA (Responsiva por defecto en Streamlit) ---
+if st.session_state.n_total > 0:
+    col_izq, col_der = st.columns([1, 1], gap="large")
     
-    1. El área del **cuadrado** de lado 2 es $4$.
-    2. El área del **círculo** de radio 1 es $\pi$.
-    3. La proporción de puntos que caen dentro del círculo tiende a:
-    
-    $$\frac{N_{dentro}}{N_{total}} \approx \frac{\pi}{4}$$
-    
-    Multiplicando por 4, obtenemos nuestra aproximación de $\pi$.
-    """)
-    
-    st.write("---")
-    st.metric("π Estimado", f"{pi_estimado:.6f}")
-    st.metric("Error Absoluto", f"{error:.6f}")
+    with col_izq:
+        st.write("### 📊 Estado de la aproximación")
+        
+        # Cálculos métricos
+        pi_estimado = 4 * (st.session_state.n_inside / st.session_state.n_total)
+        error_abs = abs(pi_estimado - np.pi)
+        
+        # Tarjetas de datos limpias
+        st.metric("Total de Dardos Lanzados", f"{st.session_state.n_total:,}")
+        st.metric("Dardos dentro del blanco", f"{st.session_state.n_inside:,}")
+        st.metric("Valor Estimado de π", f"{pi_estimado:.6f}")
+        st.metric("Error Absoluto", f"{error_abs:.6f}")
+        
+        st.markdown(f"""
+        $$\\frac{{N_{{dentro}}}}{{N_{{total}}}} \\approx \\frac{{\\text{{Área Círculo}}}}{{\\text{{Área Cuadrado}}}} = \\frac{{\\pi}}{{4}}$$
+        
+        Multiplicando la proporción por 4, obtenemos la estimación actual de $\\pi$. ¡Cuantos más puntos sumes, más estable se volverá el decimal!
+        """)
 
-with col2:
-    # Muestra para el gráfico
-    max_ver = 50000
-    if n_puntos > max_ver:
-        indices = np.random.choice(range(n_puntos), max_ver, replace=False)
-        x_v, y_v, d_v = x[indices], y[indices], dentro[indices]
-    else:
-        x_v, y_v, d_v = x, y, dentro
+    with col_der:
+        # Gráfico cuadrado perfecto, limpio y responsivo
+        fig, ax = plt.subplots(figsize=(6, 6))
+        
+        x_v = st.session_state.x_plot
+        y_v = st.session_state.y_plot
+        d_v = st.session_state.inside_plot
+        
+        if len(x_v) > 0:
+            # Puntos dentro (Verde) y fuera (Rojo)
+            ax.scatter(x_v[d_v], y_v[d_v], color='#2ecc71', s=1.5, alpha=0.6, label='Dentro')
+            ax.scatter(x_v[~d_v], y_v[~d_v], color='#e74c3c', s=1.5, alpha=0.6, label='Fuera')
+        
+        # Dibujar silueta del círculo central de radio 1
+        circle = plt.Circle((0, 0), 1, color='#001f3f', fill=False, linewidth=2.5, label='Blanco')
+        ax.add_artist(circle)
+        
+        # Formateo estético del gráfico
+        ax.set_xlim(-1.05, 1.05)
+        ax.set_ylim(-1.05, 1.05)
+        ax.set_aspect('equal')
+        ax.axis('off') # Volamos los ejes numéricos feos para que parezca un juego de dardos real
+        
+        # use_container_width=True hace que responda al zoom dinámicamente
+        st.pyplot(fig, use_container_width=True)
+else:
+    st.info("🎯 Hacé clic en los botones de arriba para empezar a lanzar dardos y ver la magia de Monte Carlo en tiempo real.")
 
-    fig, ax = plt.subplots(figsize=(8, 8))
-    
-    # Dibujar puntos
-    ax.scatter(x_v[d_v], y_v[d_v], color='#2ecc71', s=0.1, alpha=0.5, label='Dentro')
-    ax.scatter(x_v[~d_v], y_v[~d_v], color='#e74c3c', s=0.1, alpha=0.5, label='Fuera')
-    
-    # Círculo y Radio
-    circulo = plt.Circle((0, 0), 1, color='black', fill=False, linewidth=2)
-    ax.add_artist(circulo)
-    
-    # Línea del radio indicativa
-    ax.plot([0, 1], [0, 0], color='blue', linewidth=3, label='Radio (r=1)')
-    ax.text(0.5, 0.05, 'r = 1', color='blue', fontsize=12, fontweight='bold')
-    
-    # Estética
-    ax.set_xlim(-1.1, 1.1)
-    ax.set_ylim(-1.1, 1.1)
-    ax.set_aspect('equal')
-    ax.axis('off')
-    
-    st.pyplot(fig)
+# --- BOTÓN DE RETORNO AL HUB ---
+st.write("---")
+col_vacia1, col_boton_regreso, col_vacia2 = st.columns([1, 1, 1])
+with col_boton_regreso:
+    st.markdown('<a href="https://future-day-2026-hub.streamlit.app/" target="_blank" class="btn-nav">🔙 Volver al Hub Principal</a>', unsafe_allow_html=True)
