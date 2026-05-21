@@ -10,9 +10,10 @@ st.set_page_config(page_title="Cálculo de Pi - Monte Carlo", layout="wide", ini
 if 'n_total' not in st.session_state:
     st.session_state.n_total = 0
     st.session_state.n_inside = 0
-    st.session_state.x_plot = np.array([])
-    st.session_state.y_plot = np.array([])
-    st.session_state.inside_plot = np.array([])
+    # Agregamos dtype para forzar el tipo de dato y evitar el error de NumPy
+    st.session_state.x_plot = np.array([], dtype=float)
+    st.session_state.y_plot = np.array([], dtype=float)
+    st.session_state.inside_plot = np.array([], dtype=bool)
 
 # --- ESTILOS CSS UNIFICADOS ---
 st.markdown("""
@@ -98,9 +99,9 @@ reiniciar = col_btn3.button("🗑️ Reiniciar Simulación")
 if reiniciar:
     st.session_state.n_total = 0
     st.session_state.n_inside = 0
-    st.session_state.x_plot = np.array([])
-    st.session_state.y_plot = np.array([])
-    st.session_state.inside_plot = np.array([])
+    st.session_state.x_plot = np.array([], dtype=float)
+    st.session_state.y_plot = np.array([], dtype=float)
+    st.session_state.inside_plot = np.array([], dtype=bool)
     st.rerun()
 
 puntos_a_generar = 0
@@ -158,7 +159,8 @@ if st.session_state.n_total > 0:
         
         x_v = st.session_state.x_plot
         y_v = st.session_state.y_plot
-        d_v = st.session_state.inside_plot
+        # Seguro doble .astype(bool) por las dudas para evitar colapsos
+        d_v = st.session_state.inside_plot.astype(bool) 
         
         if len(x_v) > 0:
             # Puntos dentro (Verde) y fuera (Rojo)
@@ -173,7 +175,7 @@ if st.session_state.n_total > 0:
         ax.set_xlim(-1.05, 1.05)
         ax.set_ylim(-1.05, 1.05)
         ax.set_aspect('equal')
-        ax.axis('off') # Volamos los ejes numéricos feos para que parezca un juego de dardos real
+        ax.axis('off') 
         
         # use_container_width=True hace que responda al zoom dinámicamente
         st.pyplot(fig, use_container_width=True)
