@@ -22,8 +22,7 @@ def get_base64_image(image_base_name):
 if 'n_total' not in st.session_state:
     st.session_state.n_total = 0
     st.session_state.n_inside = 0
-    # SOLUCIÓN AL BUG: Usamos listas nativas de Python en lugar de np.array
-    # Esto evita que numpy rompa los tipos de datos al hacer "append"
+    # Usamos listas nativas de Python para evitar el IndexError al graficar
     st.session_state.x_plot = []
     st.session_state.y_plot = []
     st.session_state.inside_plot = []
@@ -33,19 +32,16 @@ st.markdown("""
 <style>
 .main { background-color: #f8fafc; }
 
-/* Recuadro de contexto histórico estructurado en filas */
+/* Recuadro de contexto histórico (ahora son dos independientes) */
 .context-box {
     background-color: #e2e8f0;
     border-radius: 15px;
     border-left: 10px solid #0074D9;
     padding: 30px;
-    display: flex;
-    flex-direction: column;
-    gap: 35px; /* Espacio generoso entre las dos historias */
-    margin-bottom: 25px;
+    margin-bottom: 25px; /* Espacio entre los dos recuadros */
 }
 
-/* Cada fila que une una imagen con su texto específico */
+/* Fila interna que une la imagen con su texto */
 .intro-row {
     display: flex;
     align-items: center;
@@ -106,13 +102,12 @@ st.markdown("""
     
     .context-box {
         padding: 20px !important;
-        gap: 30px !important;
     }
     
-    /* En el celular cada fila se apila verticalmente e individuales */
+    /* En el celular cada fila se apila verticalmente */
     .intro-row {
         flex-direction: column !important;
-        gap: 12px !important;
+        gap: 15px !important;
         text-align: center !important;
     }
     
@@ -145,7 +140,8 @@ st.write("---")
 img_stokhos = get_base64_image('stokhos')
 img_jvn = get_base64_image('jvn')
 
-# --- RECUADRO DE CONTEXTO HISTÓRICO OPTIMIZADO ---
+# --- RECUADROS DE CONTEXTO HISTÓRICO SEPARADOS ---
+# Todo el HTML alineado a la izquierda sin sangría para evitar bugs de Markdown
 st.markdown(f"""
 <div class="context-box">
     <div class="intro-row">
@@ -160,7 +156,9 @@ st.markdown(f"""
             </p>
         </div>
     </div>
-    
+</div>
+
+<div class="context-box">
     <div class="intro-row">
         <div class="image-side-single">
             <img src="{img_jvn}" alt="John von Neumann">
@@ -187,7 +185,6 @@ reiniciar = col_btn4.button("🗑️ Reiniciar Simulación")
 if reiniciar:
     st.session_state.n_total = 0
     st.session_state.n_inside = 0
-    # Reiniciamos como listas
     st.session_state.x_plot = []
     st.session_state.y_plot = []
     st.session_state.inside_plot = []
@@ -213,7 +210,7 @@ if puntos_a_generar > 0:
         espacio_libre = 25000 - len(st.session_state.x_plot)
         a_guardar = min(puntos_a_generar, espacio_libre)
         
-        # Extendemos las listas, asegurando que no haya conflictos de Numpy
+        # Extendemos las listas
         st.session_state.x_plot.extend(new_x[:a_guardar].tolist())
         st.session_state.y_plot.extend(new_y[:a_guardar].tolist())
         st.session_state.inside_plot.extend(new_inside[:a_guardar].tolist())
@@ -227,7 +224,12 @@ if st.session_state.n_total > 0:
     with col_izq:
         st.write("### 📊 Estado de la aproximación")
         
-        pi_estimado = 4 * (st.session_state.n_inside / st.session_state.n_total)
+        # Recordando la corrección del historial: evitamos infinito por las dudas
+        if st.session_state.n_total > 0:
+            pi_estimado = 4 * (st.session_state.n_inside / st.session_state.n_total)
+        else:
+            pi_estimado = 0
+            
         error_abs = abs(pi_estimado - np.pi)
         
         st.metric("Total de Dardos Lanzados", f"{st.session_state.n_total:,}")
@@ -244,7 +246,7 @@ Multiplicando la proporción por 4, obtenemos la estimación actual de $\\pi$. �
     with col_der:
         fig, ax = plt.subplots(figsize=(5, 5))
         
-        # Convertimos las listas a arrays JUSTO antes de graficar y forzando el tipo (dtype)
+        # Convertimos a array forzando tipos
         x_v = np.array(st.session_state.x_plot, dtype=float)
         y_v = np.array(st.session_state.y_plot, dtype=float)
         d_v = np.array(st.session_state.inside_plot, dtype=bool) 
