@@ -10,7 +10,6 @@ st.set_page_config(page_title="Cálculo de Pi - Monte Carlo", layout="wide", ini
 if 'n_total' not in st.session_state:
     st.session_state.n_total = 0
     st.session_state.n_inside = 0
-    # Agregamos dtype para forzar el tipo de dato y evitar el error de NumPy
     st.session_state.x_plot = np.array([], dtype=float)
     st.session_state.y_plot = np.array([], dtype=float)
     st.session_state.inside_plot = np.array([], dtype=bool)
@@ -35,7 +34,7 @@ st.markdown("""
         margin: 0;
     }
 
-    /* Botón de retorno al Hub */
+    /* Botón de navegación personalizado */
     .btn-nav {
         display: block;
         width: 100%;
@@ -89,11 +88,12 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# --- CONTROLES DE ACUMULACIÓN ---
-col_btn1, col_btn2, col_btn3 = st.columns(3)
+# --- CONTROLES DE ACUMULACIÓN (Ahora en 4 columnas) ---
+col_btn1, col_btn2, col_btn3, col_btn4 = st.columns(4)
 add_100 = col_btn1.button("➕ Agregar 100 puntos")
 add_1000 = col_btn2.button("➕ Agregar 1.000 puntos")
-reiniciar = col_btn3.button("🗑️ Reiniciar Simulación")
+add_10000 = col_btn3.button("🚀 Agregar 10.000 puntos")
+reiniciar = col_btn4.button("🗑️ Reiniciar Simulación")
 
 # Lógica de acumulación
 if reiniciar:
@@ -109,6 +109,8 @@ if add_100:
     puntos_a_generar = 100
 elif add_1000:
     puntos_a_generar = 1000
+elif add_10000:
+    puntos_a_generar = 10000
 
 if puntos_a_generar > 0:
     # Generamos los nuevos puntos aleatorios
@@ -120,7 +122,7 @@ if puntos_a_generar > 0:
     st.session_state.n_total += puntos_a_generar
     st.session_state.n_inside += np.sum(new_inside)
     
-    # Impacto visual (tope de 25k puntos en el gráfico para conservar performance móvil/PC)
+    # Impacto visual (tope inteligente de 25k puntos para conservar la fluidez visual)
     if len(st.session_state.x_plot) < 25000:
         espacio_libre = 25000 - len(st.session_state.x_plot)
         a_guardar = min(puntos_a_generar, espacio_libre)
@@ -130,9 +132,9 @@ if puntos_a_generar > 0:
 
 st.write("---")
 
-# --- DISPOSICIÓN BI-COLUMNA (Responsiva por defecto en Streamlit) ---
+# --- DISPOSICIÓN BI-COLUMNA OPTIMIZADA (4 de texto, 3 de gráfico para achicarlo) ---
 if st.session_state.n_total > 0:
-    col_izq, col_der = st.columns([1, 1], gap="large")
+    col_izq, col_der = st.columns([4, 3], gap="large")
     
     with col_izq:
         st.write("### 📊 Estado de la aproximación")
@@ -154,12 +156,11 @@ if st.session_state.n_total > 0:
         """)
 
     with col_der:
-        # Gráfico cuadrado perfecto, limpio y responsivo
-        fig, ax = plt.subplots(figsize=(6, 6))
+        # Gráfico cuadrado perfecto, limpio, responsivo y ahora contenido en una columna más chica
+        fig, ax = plt.subplots(figsize=(5, 5))
         
         x_v = st.session_state.x_plot
         y_v = st.session_state.y_plot
-        # Seguro doble .astype(bool) por las dudas para evitar colapsos
         d_v = st.session_state.inside_plot.astype(bool) 
         
         if len(x_v) > 0:
@@ -177,7 +178,7 @@ if st.session_state.n_total > 0:
         ax.set_aspect('equal')
         ax.axis('off') 
         
-        # use_container_width=True hace que responda al zoom dinámicamente
+        # use_container_width=True hace que responda al zoom dinámicamente dentro de su nueva columna
         st.pyplot(fig, use_container_width=True)
 else:
     st.info("🎯 Hacé clic en los botones de arriba para empezar a lanzar dardos y ver la magia de Monte Carlo en tiempo real.")
