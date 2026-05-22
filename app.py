@@ -271,4 +271,4 @@ else:
 st.write("---")
 col_vacia1, col_boton_regreso, col_vacia2 = st.columns([1, 1, 1])
 with col_boton_regreso:
-    st.markdown('<a href="https://future-day-2026-hub.streamlit.app/" target="_blank" class="btn-nav">🔙 Volver al Hub Principal</a>', unsafe_allow_html=True)
+    st.markdown('<a href="https://future-day-2026-app-bbynemlxetszzudwtcup4u.streamlit.app/" target="_blank" class="btn-nav">🔙 Volver al Hub Principal</a>', unsafe_allow_html=True)
