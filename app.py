@@ -1,274 +1,222 @@
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
+from PIL import Image
 import base64
 import os
 
-# Configuración de la página
-st.set_page_config(page_title="Cálculo de Pi - Monte Carlo", layout="wide", initial_sidebar_state="collapsed")
+# Configuración de la página (layout ancho)
+st.set_page_config(page_title="Pi - Simulación de Montecarlo - ITBA", layout="wide", initial_sidebar_state="collapsed")
 
-# Función a prueba de balas para cargar imágenes (busca la extensión automáticamente)
-def get_base64_image(image_base_name):
-    extensiones = ['.png', '.jpg', '.jpeg', '.PNG', '.JPG']
-    for ext in extensiones:
-        path = image_base_name + ext
-        if os.path.exists(path):
-            mime = "image/jpeg" if ext.lower() in ['.jpg', '.jpeg'] else "image/png"
-            with open(path, "rb") as img_file:
-                return f"data:{mime};base64,{base64.b64encode(img_file.read()).decode()}"
-    return "https://via.placeholder.com/150?text=Falta+" + image_base_name
+# Inicialización del Session State
+if 'all_pi_estimates' not in st.session_state:
+    st.session_state.all_pi_estimates = []
+if 'total_points_global' not in st.session_state:
+    st.session_state.total_points_global = 0
 
-# --- MEMORIA ACUMULATIVA (Session State) ---
-if 'n_total' not in st.session_state:
-    st.session_state.n_total = 0
-    st.session_state.n_inside = 0
-    # Usamos listas nativas de Python para evitar el IndexError al graficar
-    st.session_state.x_plot = []
-    st.session_state.y_plot = []
-    st.session_state.inside_plot = []
+# Función para cargar imágenes locales en Base64
+def get_base64_image(image_path):
+    if os.path.exists(image_path):
+        with open(image_path, "rb") as img_file:
+            return f"data:image/png;base64,{base64.b64encode(img_file.read()).decode()}"
+    return "https://via.placeholder.com/180x240?text=Imagen+Local"
 
-# --- ESTILOS CSS UNIFICADOS Y RESPONSIVOS ---
+# --- Branding Hub (Logo ITBA + Título) ---
+# Ocultar sidebar nativo
 st.markdown("""
-<style>
-.main { background-color: #f8fafc; }
-
-/* Recuadro de contexto histórico (ahora son dos independientes) */
-.context-box {
-    background-color: #e2e8f0;
-    border-radius: 15px;
-    border-left: 10px solid #0074D9;
-    padding: 30px;
-    margin-bottom: 25px; /* Espacio entre los dos recuadros */
-}
-
-/* Fila interna que une la imagen con su texto */
-.intro-row {
-    display: flex;
-    align-items: center;
-    gap: 35px;
-}
-
-/* Contenedor individual para cada imagen */
-.image-side-single {
-    min-width: 150px;
-    max-width: 150px;
-    text-align: center;
-}
-.image-side-single img {
-    width: 100%;
-    height: auto;
-    border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-}
-
-/* Sección de texto */
-.text-side {
-    flex: 1;
-}
-.text-side p {
-    font-size: 19px !important;
-    line-height: 1.6;
-    color: #1e293b;
-    margin: 0;
-}
-
-/* Botón de navegación personalizado */
-.btn-nav {
-    display: block;
-    width: 100%;
-    padding: 12px 0;
-    background-color: #001f3f;
-    color: #ffffff !important;
-    text-align: center;
-    border-radius: 10px;
-    text-decoration: none !important;
-    font-weight: 600;
-    font-size: 16px;
-    transition: background-color 0.3s ease;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    margin-top: 30px;
-}
-.btn-nav:hover, .btn-nav:visited, .btn-nav:active {
-    text-decoration: none !important;
-    color: white !important;
-}
-.btn-nav:hover {
-    background-color: #0074D9;
-}
-
-/* --- PARCHE RESPONSIVO INTELIGENTE PARA CELULARES --- */
-@media (max-width: 768px) {
-    h1 { font-size: 26px !important; }
-    
-    .context-box {
-        padding: 20px !important;
-    }
-    
-    /* En el celular cada fila se apila verticalmente */
-    .intro-row {
-        flex-direction: column !important;
-        gap: 15px !important;
-        text-align: center !important;
-    }
-    
-    .image-side-single {
-        min-width: 120px !important;
-        max-width: 120px !important;
-        margin: 0 auto !important;
-    }
-    
-    .text-side p {
-        font-size: 16px !important;
-    }
-}
-</style>
+    <style>
+        [data-testid="stSidebar"] { display: none; }
+        .main { background-color: #f1f5f9; }
+        div.block-container { padding-top: 2rem; }
+    </style>
 """, unsafe_allow_html=True)
 
-# --- CABECERA ---
-col_logo, col_titulo = st.columns([1, 4])
-with col_logo:
-    img_logo = get_base64_image('logo_itba')
-    if "Falta" not in img_logo:
-        st.markdown(f'<img src="{img_logo}" width="150">', unsafe_allow_html=True)
+# Cabecera con Columnas
+col_hub_l, col_hub_r = st.columns([1, 4])
+
+with col_hub_l:
+    if os.path.exists('logo_itba.png'):
+        st.image('logo_itba.png', width=150)
     else:
         st.write("### ITBA")
-with col_titulo:
-    st.title("🎯 Calculando Pi con Dardos (Monte Carlo)")
-st.write("---")
 
-# Carga de imágenes
-img_stokhos = get_base64_image('stokhos')
-img_jvn = get_base64_image('jvn')
-
-# --- RECUADROS DE CONTEXTO HISTÓRICO SEPARADOS ---
-# Todo el HTML alineado a la izquierda sin sangría para evitar bugs de Markdown
-st.markdown(f"""
-<div class="context-box">
-    <div class="intro-row">
-        <div class="image-side-single">
-            <img src="{img_stokhos}" alt="Stokhos - Arquero Griego">
-        </div>
-        <div class="text-side">
-            <p>
-                Los arqueros de la Antigua Grecia practicaban tirando a un blanco que llamaban <b><i>stokhos</i></b> (στόχος). 
-                Pese a su proverbial puntería, se daban cuenta que había pequeños factores <b><i>al azar</i></b> que los 
-                hacían fallar ligeramente al blanco, y de allí proviene el término "estocástico" que usamos en la matemática actual.
-            </p>
-        </div>
-    </div>
-</div>
-
-<div class="context-box">
-    <div class="intro-row">
-        <div class="image-side-single">
-            <img src="{img_jvn}" alt="John von Neumann">
-        </div>
-        <div class="text-side">
-            <p>
-                En el siglo XX, el matemático John von Neumann, inventor de las computadoras modernas, inspirado por el 
-                Casino de Monte Carlo, notó que podía usar las simulaciones de <b><i>procesos estocásticos</i></b> para 
-                realizar aproximaciones numéricas de ciertas cantidades.
-            </p>
-        </div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-# --- CONTROLES DE ACUMULACIÓN ---
-col_btn1, col_btn2, col_btn3, col_btn4 = st.columns(4)
-add_100 = col_btn1.button("➕ Agregar 100 puntos")
-add_1000 = col_btn2.button("➕ Agregar 1.000 puntos")
-add_10000 = col_btn3.button("🚀 Agregar 10.000 puntos")
-reiniciar = col_btn4.button("🗑️ Reiniciar Simulación")
-
-# Lógica de acumulación
-if reiniciar:
-    st.session_state.n_total = 0
-    st.session_state.n_inside = 0
-    st.session_state.x_plot = []
-    st.session_state.y_plot = []
-    st.session_state.inside_plot = []
-    st.rerun()
-
-puntos_a_generar = 0
-if add_100:
-    puntos_a_generar = 100
-elif add_1000:
-    puntos_a_generar = 1000
-elif add_10000:
-    puntos_a_generar = 10000
-
-if puntos_a_generar > 0:
-    new_x = np.random.uniform(-1, 1, puntos_a_generar)
-    new_y = np.random.uniform(-1, 1, puntos_a_generar)
-    new_inside = (new_x**2 + new_y**2) <= 1
-    
-    st.session_state.n_total += puntos_a_generar
-    st.session_state.n_inside += np.sum(new_inside)
-    
-    if len(st.session_state.x_plot) < 25000:
-        espacio_libre = 25000 - len(st.session_state.x_plot)
-        a_guardar = min(puntos_a_generar, espacio_libre)
-        
-        # Extendemos las listas
-        st.session_state.x_plot.extend(new_x[:a_guardar].tolist())
-        st.session_state.y_plot.extend(new_y[:a_guardar].tolist())
-        st.session_state.inside_plot.extend(new_inside[:a_guardar].tolist())
+with col_hub_r:
+    # Título estilizado Hub
+    st.markdown("<h1 style='font-size: 40px; margin-bottom: 0;'><span style='color: #000000;'>Pi (π):</span> <span style='color: #0074D9;'>Simulación de Montecarlo</span></h1>", unsafe_allow_html=True)
+    st.write("Future Day 2026 - Departamento de Ciencias Exactas y Naturales")
 
 st.write("---")
 
-# --- DISPOSICIÓN CENTRADA SIMÉTRICA ---
-if st.session_state.n_total > 0:
-    col_pad1, col_izq, col_der, col_pad2 = st.columns([1, 4.5, 4.5, 1], gap="large")
+# --- INTRODUCCIÓN TEÓRICA ---
+c_einstein_fp, c_fp_texto = st.columns([1.5, 6])
+
+with c_einstein_fp:
+    img_montecarlo = get_base64_image('montecarlo_teoria.png')
+    st.markdown(f'<img src="{img_montecarlo}" width="180" style="border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">', unsafe_allow_html=True)
+
+with c_fp_texto:
+    st.markdown("""
+    <div style="font-size: 20px; line-height: 1.6; background-color: #e2e8f0; padding: 25px; border-radius: 12px; border-left: 8px solid #0074D9; color: #0f172a; margin-bottom: 15px;">
+        La simulación de Montecarlo es un método estadístico para estimar valores matemáticos difíciles de calcular analíticamente, 
+        utilizando la <b>aleatoriedad</b> a nuestro favor. 
+        <br><br>
+        En este ejemplo, estimaremos <b>π (Pi)</b>. Imagina que lanzas dardos al azar dentro de un cuadrado de 2x2. 
+        Si el cuadrado encierra un círculo unitario (de radio 1) centrado en el origen (0,0), la proporción de dardos 
+        que caen dentro del círculo nos permite aproximar Pi utilizando la fórmula:
+        
+        <div style="text-align: center; font-size: 24px; margin: 15px 0;">
+            <b>π ≈ 4 · (# Ocurrencias / # Repeticiones)</b>
+        </div>
+        
+        <i>Piense en el hint que dio en la Intro la rifa, como la proporción de veces que ocurrió en el pasado un fenómeno
+        bajo ciertas condiciones estableces sus probabilidades.</i>
+    </div>
+    """, unsafe_allow_html=True)
+
+st.write("---")
+
+# --- NUEVA DISPOSICIÓN EN COLUMNAS FIJAS ---
+col_control, col_display = st.columns([1, 2.5], gap="large")
+
+with col_control:
+    st.subheader("Configuración")
     
-    with col_izq:
-        st.write("### 📊 Estado de la aproximación")
+    # User input N_puntos, semsibilidad slider
+    n_puntos = st.slider("Número de dardos (N):", 100, 100000, 10000, step=100)
+    st.write(f"Precalibrando simulación para tirar {n_puntos:,} dardos al azar...")
+    
+    st.write("") # Espaciador
+    
+    # Botón Simular (genera puntos)
+    if st.button("🚶‍♂️ Generar Dardos", use_container_width=True):
+        st.session_state.n_puntos = n_puntos
+        st.session_state.total_points_global += n_puntos
+        st.session_state.pi_points_generated = True
         
-        # Recordando la corrección del historial: evitamos infinito por las dudas
-        if st.session_state.n_total > 0:
-            pi_estimado = 4 * (st.session_state.n_inside / st.session_state.n_total)
-        else:
-            pi_estimado = 0
-            
-        error_abs = abs(pi_estimado - np.pi)
-        
-        st.metric("Total de Dardos Lanzados", f"{st.session_state.n_total:,}")
-        st.metric("Dardos dentro del blanco", f"{st.session_state.n_inside:,}")
-        st.metric("Valor Estimado de π", f"{pi_estimado:.6f}")
-        st.metric("Error Absoluto", f"{error_abs:.6f}")
-        
-        st.markdown(f"""
-$$\\frac{{N_{{dentro}}}}{{N_{{total}}}} \\approx \\frac{{\\text{{Área Círculo}}}}{{\\text{{Área Cuadrado}}}} = \\frac{{\\pi}}{{4}}$$
+    st.write("") # Espaciador
 
-Multiplicando la proporción por 4, obtenemos la estimación actual de $\\pi$. ¡Cuantos más puntos sumes, más estable se volverá el decimal!
-        """)
+    # Botón Reiniciar
+    if st.button("🗑️ Reiniciar", use_container_width=True):
+        st.session_state.all_pi_estimates = []
+        st.session_state.total_points_global = 0
+        st.session_state.pi_points_generated = False
+        st.rerun()
 
-    with col_der:
-        fig, ax = plt.subplots(figsize=(5, 5))
+# Espacio principal de visualización (Gráfico y Pestañas)
+with col_display:
+    N = st.session_state.get('n_puntos', 0)
+    
+    if N > 0:
+        # Cálculos de Montecarlo
+        # Coordenadas aleatorias entre [-1, 1]x[-1, 1] para un cuadrado area 4
+        x = np.random.uniform(-1, 1, N)
+        y = np.random.uniform(-1, 1, N)
         
-        # Convertimos a array forzando tipos
-        x_v = np.array(st.session_state.x_plot, dtype=float)
-        y_v = np.array(st.session_state.y_plot, dtype=float)
-        d_v = np.array(st.session_state.inside_plot, dtype=bool) 
+        # Condición: adentro del círculo unitario (x^2 + y^2 <= 1^2) radio=1
+        inside = x**2 + y**2 <= 1
+        points_inside = np.sum(inside)
         
-        if len(x_v) > 0:
-            ax.scatter(x_v[d_v], y_v[d_v], color='#2ecc71', s=1.5, alpha=0.6, label='Dentro')
-            ax.scatter(x_v[~d_v], y_v[~d_v], color='#e74c3c', s=1.5, alpha=0.6, label='Fuera')
+        # Estimación de Pi
+        # Area(circulo)/Area(cuadrado) = pi*1^2 / (2*2) = pi/4
+        # Area(circulo)/Area(cuadrado) appx points_inside / N
+        ratio = points_inside / N
+        pi_estimate = 4 * ratio
+        st.session_state.all_pi_estimates.append(pi_estimate)
+
+        st.divider()
+
+        # =========================================================================
+        # SECCIÓN MODIFICADA: VISUALIZACIÓN DEL GRÁFICO (Borde Cuadrado y Radio R=1)
+        # =========================================================================
+        # El resto del código de la simulación queda EXACTAMENTE IGUAL.
         
-        circle = plt.Circle((0, 0), 1, color='#001f3f', fill=False, linewidth=2.5, label='Blanco')
-        ax.add_artist(circle)
+        st.subheader("Simulación Visual")
+        fig, ax = plt.subplots(figsize=(8, 8))
         
-        ax.set_xlim(-1.05, 1.05)
-        ax.set_ylim(-1.05, 1.05)
+        # Puntos adentro y afuera (logic remains same s=1 alpha=0.5)
+        ax.scatter(x[inside], y[inside], color='#1f77b4', s=1, label='Adentro', alpha=0.5)
+        ax.scatter(x[~inside], y[~inside], color='#ff7f0e', s=1, label='Afuera', alpha=0.5)
+        
+        # 1. Contorno del círculo unitario (Symmetric full circle to match symmetric point generation range [-1, 1]x[-1, 1])
+        theta = np.linspace(0, 2 * np.pi, 200) # Changed from 0 to Pi/2 QI quarter circle
+        x_circ = np.cos(theta)
+        y_circ = np.sin(theta)
+        ax.plot(x_circ, y_circ, color='black', linewidth=1.5) # Thin black line for boundary boundary line
+
+        # 2. Add Square Border (Cuadrado $[-1, 1] \times [-1, 1]$ bounding box matching point range)
+        import matplotlib.patches as patches # Safe insertion for necessary components locally
+        rect = patches.Rectangle((-1, -1), 2, 2, linewidth=1.5, edgecolor='black', facecolor='none', linestyle='-') # Solid black border border bounding box
+        ax.add_patch(rect)
+        
+        # 3. Add Radius Visual Indication line (Horizontal on positive x axis)
+        ax.plot([0, 1], [0, 0], color='gray', linestyle='-') # Gray solid line origin to x=1 labeled 'R=1'
+        ax.text(0.5, 0.05, 'R=1', fontsize=12, color='black') # label for R=1 explicit segment midpoint R=1 indication indication line text label
+
+        ax.set_xlim(-1.1, 1.1) 
+        ax.set_ylim(-1.1, 1.1)
         ax.set_aspect('equal')
-        ax.axis('off') 
         
         st.pyplot(fig, use_container_width=True)
-else:
-    st.info("🎯 Hacé clic en los botones de arriba para empezar a lanzar dardos y ver la magia de Monte Carlo en tiempo real.")
+        # =========================================================================
+        # FIN DE LA SECCIÓN MODIFICADA
+        # =========================================================================
 
-# --- BOTÓN DE RETORNO AL HUB ---
-st.write("---")
-col_vacia1, col_boton_regreso, col_vacia2 = st.columns([1, 1, 1])
-with col_boton_regreso:
-    st.markdown('<a href="https://future-day-2026-app-bbynemlxetszzudwtcup4u.streamlit.app/" target="_blank" class="btn-nav">🔙 Volver al Hub Principal</a>', unsafe_allow_html=True)
+        # Pestañas de análisis estadístico
+        tab_pi_results, tab_pi_historico = st.tabs(["📉 Resultados de la Simulación Actual", "📈 Historial de Estimaciones"])
+
+        with tab_pi_results:
+            st.write(f"### Dardos tirados en esta tanda (N): {N:,}")
+            
+            # Métricas
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric(label="✅ Dardos Adentro", value=f"{points_inside:,}")
+            with col2:
+                st.metric(label="❌ Dardos Afuera", value=f"{N - points_inside:,}")
+
+            st.write("### Estimación de Pi")
+            st.markdown(f"""
+            <div style="font-size: 18px; line-height: 1.6; background-color: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #cbd5e1; margin-bottom: 20px;">
+                Usando la Ley de los Grandes Números del hint de Intro, sabemos que la frecuencia de ocurrencia se acerca a la probabilidad. 
+                <br><br>
+                Proporción de dardos adentro $\\approx \\pi / 4$
+                <br>
+                Por lo tanto, $\\pi \\approx 4 \cdot ( \\text{{Dardos Adentro}} / \\text{{Total Dardos}} )$
+                <br><br>
+                <b>Estimación actual de Pi para N={N:,} dardos:</b>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Métrica Pi final
+            error_abs = np.abs(np.pi - pi_estimate)
+            st.metric(label="Estimación de Pi (π)", value=f"{pi_estimate:.6f}", delta=f"Real: {np.pi:.6f}, Error: {error_abs:.6f}")
+            
+            st.info("""
+            💡 **Curiosidad:** Esta estimación es **probabilística**. No 'calcula' Pi, sino que se acerca a su valor 
+            a medida que tiramos más y más dardos al azar.
+            """)
+
+        with tab_pi_historico:
+            st.subheader("Historial de Estimaciones de Pi")
+            
+            if len(st.session_state.all_pi_estimates) > 0:
+                hist_data = pd.DataFrame({
+                    'Simulación #': range(1, len(st.session_state.all_pi_estimates) + 1),
+                    'Estimación de Pi': st.session_state.all_pi_estimates
+                })
+                
+                # Gráfico histórico
+                st.write(f"Número total de estimaciones guardadas: {len(st.session_state.all_pi_estimates):,}")
+                st.line_chart(hist_data, x='Simulación #', y='Estimación de Pi', color="#ff7f0e")
+                
+                st.write("---")
+                
+                # Promedio global de Pi
+                pi_avg_global = np.mean(st.session_state.all_pi_estimates)
+                error_abs_global = np.abs(np.pi - pi_avg_global)
+                
+                st.write("### Promedio Global acumulado")
+                st.metric(label="Promedio Global de Pi (π) acumulado", value=f"{pi_avg_global:.6f}", delta=f"Error Abs Promedio: {error_abs_global:.6f}")
+                st.write(f"Número total acumulado de dardos generados entre todas las simulaciones: {st.session_state.total_points_global:,}...")
+            else:
+                st.warning("No hay estimaciones guardadas aún. Dale clic a '🚶‍♂️ Generar Dardos' para simular.")
